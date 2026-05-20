@@ -54,22 +54,26 @@ ANSWER_STYLE_SYSTEM = """당신은 친절하고 공손한 AI 어시스턴트입�
 
 
 def _setup_logging() -> logging.Logger:
-    LOG_DIR.mkdir(parents=True, exist_ok=True)
-    log_path = LOG_DIR / f"multiusers_{datetime.now().strftime('%Y%m%d')}.log"
-
     root = logging.getLogger()
     root.handlers.clear()
     root.setLevel(logging.WARNING)
 
     fmt = logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
-    fh = logging.FileHandler(log_path, encoding="utf-8")
-    fh.setLevel(logging.WARNING)
-    fh.setFormatter(fmt)
     ch = logging.StreamHandler()
     ch.setLevel(logging.WARNING)
     ch.setFormatter(fmt)
-    root.addHandler(fh)
     root.addHandler(ch)
+
+    # Streamlit Cloud 등 배포 환경은 앱 디렉터리에 쓰기 불가 → 파일 로그 생략
+    try:
+        LOG_DIR.mkdir(parents=True, exist_ok=True)
+        log_path = LOG_DIR / f"multiusers_{datetime.now().strftime('%Y%m%d')}.log"
+        fh = logging.FileHandler(log_path, encoding="utf-8")
+        fh.setLevel(logging.WARNING)
+        fh.setFormatter(fmt)
+        root.addHandler(fh)
+    except (OSError, PermissionError):
+        pass
 
     for name in ("httpx", "httpcore", "urllib3", "openai", "langchain", "langchain_openai"):
         logging.getLogger(name).setLevel(logging.WARNING)
